@@ -1,0 +1,78 @@
+blueprint:
+  name: Extend Motion Trigger
+  description: Extend motion trigger when multiple sensors are triggered.
+
+  domain: automation
+  input:
+    motion_sensor_1:
+      name: Motion Sensor 1
+      description: The first motion sensor.
+      selector:
+        entity:
+          domain: binary_sensor
+
+    motion_sensor_2:
+      name: Motion Sensor 2
+      description: The second motion sensor.
+      selector:
+        entity:
+          domain: binary_sensor
+
+    light_entity:
+      name: Light Entity
+      description: The light entity to control.
+      selector:
+        entity:
+          domain: light
+
+    timer_duration:
+      name: Timer Duration
+      description: The duration for the timer.
+      default: '00:02:00'
+      selector:
+        time: {}
+
+  source_url: URL_TO_YOUR_GIT_REPO_OR_BLANK
+
+mode: restart
+max_exceeded: silent
+
+trigger:
+  platform: state
+  entity_id: !input 'motion_sensor_1'
+  to: 'on'
+
+action:
+  - service: timer.start
+    data:
+      entity_id: timer.motion_timer
+
+automation:
+  alias: Reset Motion Timer
+  trigger:
+    platform: state
+    entity_id: !input 'motion_sensor_2'
+    to: 'on'
+  action:
+    - service: timer.start
+      data:
+        entity_id: timer.motion_timer
+
+  alias: Turn Off Lights
+  trigger:
+    platform: event
+    event_type: timer.finished
+    event_data:
+      entity_id: timer.motion_timer
+  condition:
+    condition: state
+    entity_id: !input 'motion_sensor_1'
+    state: 'off'
+  action:
+    - service: light.turn_off
+      target:
+        entity_id: !input 'light_entity'
+
+timer:
+  motion_timer:
+    duration: !input 'timer_duration'
